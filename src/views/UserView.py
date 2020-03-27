@@ -1,5 +1,6 @@
 from flask import request, json, Response, Blueprint
 from ..models.User import UserModel, UserSchema
+from marshmallow import ValidationError
 from ..shared.Authentication import Auth
 from random import randint
 import sys
@@ -13,12 +14,6 @@ def create():
   Create User Function
   """
   data = request.get_json()
-  #print(req_data  , file=sys.stderr)
-  #data, error = user_schema.load(req_data)
-  #phone_number =req_data.get('phone_number')
-  #print(phone_number, file=sys.stderr)
-
-
 
   if not data.get('phone_number'):
     return custom_response(error, 400)
@@ -27,17 +22,11 @@ def create():
   user_in_db = UserModel.get_user_by_phone_number(data.get('phone_number'))
   pin = randint(100000,999999)
   if user_in_db:
-    #message = {'error': 'User already exist, please supply another phone number'}
-    #return custom_response(message, 400)
     user_in_db.update({"pin": pin})
   else:
       data['pin'] = str(pin)
       user = UserModel(data)
       user.save()
-  
- 
-  #ser_data = user_schema.dump(user).data
-  #token = Auth.generate_token(ser_data.get('id'))
   return custom_response({'pin': pin}, 201)
 
 
@@ -105,12 +94,11 @@ def get_me():
 @user_api.route('/login', methods=['POST'])
 def login():
   req_data = request.get_json()
+  try:
+    data = user_schema.load(req_data, partial=True)
+  except ValidationError as err:
+    return custom_response({'error':err.message}, 400)
 
-  data = user_schema.load(req_data, partial=True)
-  print(data, file=sys.stderr)
-  #if error:
-   # return custom_response(error, 400)
-  
   if not data.get('phone_number') or not data.get('pin'):
     return custom_response({'error': 'you need phone_number and pin to sign in'}, 400)
   
@@ -128,7 +116,7 @@ def login():
   token = Auth.generate_token(ser_data.get('id'))
   print(token, file=sys.stderr)
 
-  return custom_response({'jwt_token': token}, 200)
+  return custom_response({'jwt_token': token, 'user_id':ser_data.get('id') }, 200)
 
 
 
