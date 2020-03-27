@@ -1,6 +1,7 @@
 from flask import request, json, Response, Blueprint
 from ..models.Donation import DonationModel, DonationSchema
 from ..shared.Authentication import Auth
+from marshmallow import ValidationError
 import sys
 
 donation_api = Blueprint('donation', __name__)
@@ -13,10 +14,10 @@ def create():
   Create Needy Function
   """
   req_data = request.get_json()
-  #print(req_data  , file=sys.stderr)
-  data = donation_schema.load(req_data)
-  #phone_number =req_data.get('phone_number')
-  #print(phone_number, file=sys.stderr)
+  try:
+    data = donation_schema.load(req_data)
+  except ValidationError as err:
+    return custom_response({'error': err.messages}, 400)
 
 
 

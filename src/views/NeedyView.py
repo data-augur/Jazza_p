@@ -1,5 +1,6 @@
 from flask import request, json, Response, Blueprint
 from ..models.Need import NeedyModel, NeedySchema
+from marshmallow import ValidationError
 from ..shared.Authentication import Auth
 from random import randint
 import sys
@@ -13,13 +14,12 @@ def create():
   """
   Create Needy Function
   """
+  
   req_data = request.get_json()
-  #print(req_data  , file=sys.stderr)
-  data = needy_schema.load(req_data)
-  #phone_number =req_data.get('phone_number')
-  #print(phone_number, file=sys.stderr)
-
-
+  try:
+    data = needy_schema.load(req_data)
+  except ValidationError as err:
+    return custom_response({'error': err.messages}, 400)
 
   if not data.get('cnic'):
     return custom_response({'error': 'Cnic missing'}, 400)
